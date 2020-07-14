@@ -1,0 +1,6 @@
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 172.20.0.2. Set the 'ServerName' directive globally to suppress this message
+[Mon Jul 13 11:35:00.617692 2020] [mpm_event:notice] [pid 1:tid 140280710317184] AH00489: Apache/2.4.43 (Unix) configured -- resuming normal operations
+[Mon Jul 13 11:35:00.617849 2020] [mpm_event:info] [pid 1:tid 140280710317184] AH00490: Server built: Jun  9 2020 07:00:39
+[Mon Jul 13 11:35:00.617861 2020] [core:notice] [pid 1:tid 140280710317184] AH00094: Command line: 'httpd -D FOREGROUND'
+[Mon Jul 13 13:05:01.410103 2020] [core:info] [pid 1:tid 140280710317184] AH00096: removed PID file /usr/local/apache2/logs/httpd.pid (pid=1)
+[Mon Jul 13 13:05:01.410142 2020] [mpm_event:notice] [pid 1:tid 140280710317184] AH00492: caught SIGWINCH, shutting down gracefully
