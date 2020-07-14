@@ -41,11 +41,46 @@ kind: Pod
 metadata: # Atributos, etiquetas relacionadas con el objeto que defino
     name: pod_apache
 spec:
-    containers:
-        - name: contenedor_
-
-
-
+    containers: # Procesos aislados que arrancan y no paran
+        - name: contenedor_apache
+          image: httpd
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: logs
+              mountPath: /logs # Ruta dentro del contenedor
+            - name: fichero_apache
+              mountPath: /usr/local/apache2/conf/httpd.conf # Ruta dentro del contenedor
+        - name: contenedor_filebeat
+          image: docker.elastic.co/beats/filebeat:7.8.0
+          volumeMounts:
+            - name: logs
+              mountPath: /logs # Podrian ser rutas distintas
+    initContainers: # Procesos aislados que arrancan y ACABA
+    # Despues de acabar todos los init containers que se ejecutan SECUENCIALMENTE,
+    # Se inician los Containers
+        # Nos vamos de definir un contenedor inicial, para que clone el repo
+        - name: ClonadorConfigApache
+          image: ubuntu
+          comand: ['sh' , '-c' , 'apt update -y && apt install git -y && git clone https://github.com/IvanciniGT/dockerToKubernetes_ApacheConfig CARPETA']
+          volumeMounts:
+            - name: fichero_apache
+              
+    
+    volumes:
+        - name: logs
+          # donde??? Maquina fisica, red, cloud, cabina
+          # La quiero en la máquina física en este caso concreto
+          emptyDir: #{}
+            medium: Memory # Velocidad
+        - name: fichero_apache
+          emptyDir: {}
+          # Alternativas: Montar una carpeta NFS <- RUINA
+          # Alternativas: Montar una imagen nueva del contenedor con el archivo incrustado
+          # GIT : Repo con el archivo <- IDEAL !!!!
+          #hostPath:
+          #  path: /home/ubuntu/envirnment/curso/docker/compose/apache/httpd.conf
+          #  type: File
 ---
 # Pod2:
     # Contenedor3: logstash
@@ -90,19 +125,19 @@ services:
             - 0.0.0.0:8080:80
         image: httpd
         volumes:
-            - ./httpd.conf:/usr/local/apache2/conf/httpd.conf
-            - ./logs:/logs
+            - ./httpd.conf:/usr/local/apache2/conf/httpd.conf # <- Inyectar fichero
+            - ./logs:/logs # <- Compartir datos con otro contenedor
     filebeat_service:
         container_name: filebeat
         image: docker.elastic.co/beats/filebeat:7.8.0 #store/elastic/filebeat:7.8.0
         volumes:
-            - ./filebeat/filebeat.yaml:/usr/share/filebeat/filebeat.yml
-            - ./logs:/logs
+            - ./filebeat/filebeat.yaml:/usr/share/filebeat/filebeat.yml # <- Inyectar fichero
+            - ./logs:/logs # <- Compartir datos con otro contenedor
     logstash_service:
         container_name: logstash
         restart: always # on-failure unless-stopped no
         volumes:
-            - ./logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+            - ./logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf # <- Inyectar fichero
         image: docker.elastic.co/logstash/logstash:7.8.0
         environment:
             MONITORING_ENABLED: 'false'
