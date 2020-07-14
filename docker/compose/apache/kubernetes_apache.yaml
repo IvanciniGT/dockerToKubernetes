@@ -62,11 +62,15 @@ spec:
         # Nos vamos de definir un contenedor inicial, para que clone el repo
         - name: ClonadorConfigApache
           image: ubuntu
-          comand: ['sh' , '-c' , 'apt update -y && apt install git -y && git clone https://github.com/IvanciniGT/dockerToKubernetes_ApacheConfig CARPETA']
+          # | Permite meter varias lineas (se mantiene el resultado en varias lineas)
+          # > Permite meter varias lineas (el resultado se aplana a 1 linea)
+          comand: >
+            ['sh' , '-c' , 'apt update -y && apt install git -y && 
+            git clone https://github.com/IvanciniGT/dockerToKubernetes_ApacheConfig /apache']
           volumeMounts:
             - name: fichero_apache
-              
-    
+              mountPath: /apache/httpd.conf
+
     volumes:
         - name: logs
           # donde??? Maquina fisica, red, cloud, cabina
