@@ -1,0 +1,109 @@
+# 3 Contenedores:
+#       miapache -> Mínimo 2.... dependiendo de la carga de trabajo montaré más.
+#       filebeat -> Tantos como apaches.
+#       logstash -> 2
+# 5 nodos físicos en mi cluster de kubernetes
+#   Nodo 1: miapache + filebeat
+#   Nodo 2: miapache + filebeat
+#   Nodo 3: logstash
+#   Nodo 4: logstash
+#   Nodo 5: vacio
+# 2 Servicios: 
+#   Servicio 1: WEB acceso a la pagina web (apache)           PUBLICO ??? SI
+#   Servicio 2: Logstash: Quien accede al logstash? FILEBEAT. PUBLICO ??? NO
+#   Filebeat. Quien accede a fileat???  NADIE : NO ES UN SERVICIO QUE OFREZCO
+# Clientes... MUCHOS !!!
+# IP para acceder a los servicios del cluster de kubernetes
+
+# Muchos ficheros: 4 documento: 2 Servicios + 2 Pods: Cada uno es un documento
+# En YAML podemos meter varios documentos en un unico fichero
+# Los documentos los separaro con ---
+---
+# Servicio WEB:      PUBLICO
+apiVersion: v1
+kind: Service
+metadata: # Atributos, etiquetas relacionadas con el objeto que defino
+    name: servicio_apache
+spec:
+---
+# Servicio Logstash: PRIVADO
+apiVersion: v1
+kind: Service
+metadata: # Atributos, etiquetas relacionadas con el objeto que defino
+    name: servicio_logstash
+spec:
+---
+# Pod1: 
+    # Contenedor1: miapache
+    # Contenedor2: filebeat
+apiVersion: v1
+kind: Pod
+metadata: # Atributos, etiquetas relacionadas con el objeto que defino
+    name: pod_apache
+spec:
+    containers:
+        - name: contenedor_
+
+
+
+---
+# Pod2:
+    # Contenedor3: logstash
+apiVersion: v1
+kind: Pod
+metadata: # Atributos, etiquetas relacionadas con el objeto que defino
+    name: pod_logstash
+spec:
+    containers:
+        - name: contenedor_logstash
+          image: docker.elastic.co/logstash/logstash:7.8.0
+          ports:
+            - containerPort: 5044
+          env:
+            - name: MONITORING_ENABLED
+              value: 'false'
+          # VOLUMEN -> inyectar el fichero de configuracion de logstash
+---
+
+# cli              servicio de docker
+#  v                       v
+#docker run        ->   dockerd 
+#
+# cli              servicio de docker
+#  v                       v
+#docker-compose    ->   dockerd
+#
+# cli            servicio de kubernetes          servicio de docker
+#  v                 v                                  v
+#kubectl     ->   kubelet                    ->      dockerd                 ->   containerd       ->        runc 
+#                (1 por maquina)                     (1 por maquina)              (1 por maquina)            (1 por contenedor)        
+# kubectl apply -f NOMBRE_FICHERO
+# docker-compose -f NOMBRE_FICHERO up
+
+
+version: '3'
+
+services:
+    miapache_service:
+        container_name: miapache
+        ports: 
+            - 0.0.0.0:8080:80
+        image: httpd
+        volumes:
+            - ./httpd.conf:/usr/local/apache2/conf/httpd.conf
+            - ./logs:/logs
+    filebeat_service:
+        container_name: filebeat
+        image: docker.elastic.co/beats/filebeat:7.8.0 #store/elastic/filebeat:7.8.0
+        volumes:
+            - ./filebeat/filebeat.yaml:/usr/share/filebeat/filebeat.yml
+            - ./logs:/logs
+    logstash_service:
+        container_name: logstash
+        restart: always # on-failure unless-stopped no
+        volumes:
+            - ./logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+        image: docker.elastic.co/logstash/logstash:7.8.0
+        environment:
+            MONITORING_ENABLED: 'false'
+            

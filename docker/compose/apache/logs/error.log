@@ -4,3 +4,15 @@ AH00558: httpd: Could not reliably determine the server's fully qualified domain
 [Mon Jul 13 11:35:00.617861 2020] [core:notice] [pid 1:tid 140280710317184] AH00094: Command line: 'httpd -D FOREGROUND'
 [Mon Jul 13 13:05:01.410103 2020] [core:info] [pid 1:tid 140280710317184] AH00096: removed PID file /usr/local/apache2/logs/httpd.pid (pid=1)
 [Mon Jul 13 13:05:01.410142 2020] [mpm_event:notice] [pid 1:tid 140280710317184] AH00492: caught SIGWINCH, shutting down gracefully
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 172.20.0.3. Set the 'ServerName' directive globally to suppress this message
+[Tue Jul 14 07:32:37.809375 2020] [mpm_event:notice] [pid 1:tid 139840223626368] AH00489: Apache/2.4.43 (Unix) configured -- resuming normal operations
+[Tue Jul 14 07:32:37.816754 2020] [mpm_event:info] [pid 1:tid 139840223626368] AH00490: Server built: Jun  9 2020 07:00:39
+[Tue Jul 14 07:32:37.816770 2020] [core:notice] [pid 1:tid 139840223626368] AH00094: Command line: 'httpd -D FOREGROUND'
+[Tue Jul 14 07:33:09.121408 2020] [core:info] [pid 1:tid 139840223626368] AH00096: removed PID file /usr/local/apache2/logs/httpd.pid (pid=1)
+[Tue Jul 14 07:33:09.121439 2020] [mpm_event:notice] [pid 1:tid 139840223626368] AH00492: caught SIGWINCH, shutting down gracefully
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 172.20.0.4. Set the 'ServerName' directive globally to suppress this message
+[Tue Jul 14 07:34:19.014295 2020] [mpm_event:notice] [pid 1:tid 140289257157760] AH00489: Apache/2.4.43 (Unix) configured -- resuming normal operations
+[Tue Jul 14 07:34:19.014465 2020] [mpm_event:info] [pid 1:tid 140289257157760] AH00490: Server built: Jun  9 2020 07:00:39
+[Tue Jul 14 07:34:19.014477 2020] [core:notice] [pid 1:tid 140289257157760] AH00094: Command line: 'httpd -D FOREGROUND'
+[Tue Jul 14 08:07:34.383582 2020] [core:info] [pid 1:tid 140289257157760] AH00096: removed PID file /usr/local/apache2/logs/httpd.pid (pid=1)
+[Tue Jul 14 08:07:34.383615 2020] [mpm_event:notice] [pid 1:tid 140289257157760] AH00492: caught SIGWINCH, shutting down gracefully
