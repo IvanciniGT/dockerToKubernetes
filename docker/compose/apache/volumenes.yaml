@@ -1,0 +1,171 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: nfs-client-provisioner
+spec:
+  selector:
+    matchLabels:
+      app: nfs-client-provisioner
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nfs-client-provisioner
+    spec:
+      serviceAccountName: nfs-client-provisioner
+      containers:
+        - name: nfs-client-provisioner
+          image: quay.io/external_storage/nfs-client-provisioner:latest
+          volumeMounts:
+            - name: nfs-client-root
+              mountPath: /persistentvolumes
+          env:
+            - name: PROVISIONER_NAME
+              value: minfsserver
+            - name: NFS_SERVER
+              value: 172.31.31.168
+            - name: NFS_PATH
+              value: /mnt/kuberetes # Pod
+      volumes:
+        - name: nfs-client-root
+          nfs:
+            server: 172.31.31.168
+            path: /mnt/kuberetes # Servidor
+      affinity:
+        nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution: 
+                nodeSelectorTerms:
+                    - matchExpressions:
+                        - key: cliente-nfs
+                          operator: In
+                          values:
+                            - 'true'
+---
+#### ADMINISTRADOR DE KUBERNETES
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+    name: redundate
+provisioner: minfsserver
+reclaimPolicy: Delete # Retain
+---
+#### ADMINISTRADOR DE KUBERNETES
+apiVersion: v1
+kind: PersistentVolume
+metadata: 
+    name: volumen1
+spec:
+    storageClassName: redundate
+    capacity: 30Gi
+    accessModes:
+        - ReadWriteOnce
+    # TIPO
+    hostPath:
+        path: /raid_dev_0
+---#### ADMINISTRADOR DE KUBERNETES
+apiVersion: v1
+kind: PersistentVolume
+metadata: 
+    name: volumen2
+spec:
+    storageClassName: redundate
+    capacity: 40Gi
+    accessModes:
+        - ReadWriteOnce
+    # TIPO
+    hostPath:
+        path: /raid_dev_0
+---#### ADMINISTRADOR DE KUBERNETES
+apiVersion: v1
+kind: PersistentVolume
+metadata: 
+    name: volumen3
+spec:
+    storageClassName: redundate
+    capacity: 30Gi
+    accessModes:
+        - ReadWriteOnce
+    # TIPO
+    hostPath:
+        path: /raid_dev_0
+---#### ADMINISTRADOR DE KUBERNETES
+apiVersion: v1
+kind: PersistentVolume
+metadata: 
+    name: volumen4
+spec:
+    storageClassName: redundate
+    capacity: 30Gi
+    accessModes:
+        - ReadWriteOnce
+    hostPath:
+        path: /raid_dev_0
+---
+
+
+#### DESARROLLADOR <- DEVOPS Le da igual!!!
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: 
+    name: mi_peticion_de_volumen
+spec:
+    resources:
+        requests:
+            storage: 20Gi
+    accessMode:
+        - ReadWriteOnce
+    storageClassName: redundante
+    #redundante rapidito cloud <- Suministradas por el administrador de Kubernetes
+---
+### DESARROLLADOR <- DEVOPS Le da igual!!!
+# Deployment -> Pods, escalamiento
+# Stateful -> Se cae un pod, se levanta en otro sitio y se le montan los volumenes que tiviera en el otro sitio
+---
+
+apiVersion: v1
+kind: Pod
+metadata: 
+    name: POD
+spec:
+    containers: 
+        - name: C1
+          image: IMAGE1
+          volumeMounts:
+            - name: espacio_en_disco
+              mountPath: /datos
+        - name: C2
+          image: IMAGE2
+    volumes:
+        - name: espacio_en_disco
+          persistentVolumeClaim: mi_peticion_de_volumen
+          #TIPO???
+          # emptyDir  -> Compartir ficheros (FS) entre Contenedores
+          # configMap -> Inyectar propiedades (o ficheros) configuración como ficheros a Contenedor
+          # secret    -> Inyectar propiedades (o ficheros) encriptados configuración como ficheros a Contenedor
+          # persistencia
+            # NFS
+            # Local?
+            # Cloud
+            # Cabina
+
+Kubernetes  
+    Provisionadores:
+        Almacenamiento_mientras_viva_app: Delete
+            vol1 X -> Delete
+            vol2 X -> Delete
+            vol3
+
+    Nodo1
+        XApp1:
+            Volumen 20Gbs -> PVC (persisten volume claim -> Provisionador-> Almacenamiento_mientras_viva_app)
+                Xvol1
+    Nodo2
+        XApp1:
+            Volumen 20Gbs -> PVC (persisten volume claim -> Provisionador-> Almacenamiento_mientras_viva_app)
+                Xvol2
+    Nodo3
+        App2:
+            Volumen 30Gbs -> PVC (persisten volume claim -> Provisionador-> Almacenamiento_mientras_viva_app)
+                vol3

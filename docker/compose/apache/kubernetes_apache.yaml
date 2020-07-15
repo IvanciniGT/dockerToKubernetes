@@ -39,6 +39,36 @@
 # Muchos ficheros: 4 documento: 2 Servicios + 2 Pods: Cada uno es un documento
 # En YAML podemos meter varios documentos en un unico fichero
 # Los documentos los separaro con ---
+
+--- 
+# Los configMap: Los puedo pasa a un contenedor:
+    # Opcion A: Mediante variables de Entorno
+    # Opción B: Como ficheros dentro de un volumen
+# ConfigMaps
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: configuracion_logstash
+data:
+    MONITORING_ENABLED: 'false'
+    parametro2: valor del parametro 2
+
+--- 
+# Secret
+apiVersion: v1
+kind: Secret
+metadata:
+    name: fichero_configuracion_db
+data:
+    fichero.properties: dXN1YXJpb0JEPXVzZXJQcm9kNwpub21icmVCRD1teWFwcFByb2Q1NApwYXNzd29yZEJEPTU3NDYzOERGUzgkJCU=
+---
+# Secret
+apiVersion: v1
+kind: Secret
+metadata:
+    name: contrasena_administrador
+data:
+    contrasena: cGFzc3dvcmQ=
 ---
 # Servicio WEB:      PUBLICO
 apiVersion: v1
@@ -49,7 +79,7 @@ spec:
     #type: NodePort # PELIGROSO !!!!!!!
     # NO VA A SER LA PRACTICA HABITUAL. Ataco a una única maquina (IP)
     
-    type: LoadBalancer # "A priori" solo funciona con CLOUDS PUBLICOS
+    type: NodePort # "A priori" solo funciona con CLOUDS PUBLICOS
     # Se va a asignar una IP publica (OTORGADA POR EL CLOUD PUBLICO) 
     # como IP publica del balanceador
     # Balanceador IP publica
@@ -64,11 +94,11 @@ spec:
     ports:
         - targetPort: 80
           port: 80 # <- SIEMPRE ESTA EN UNA IP PRIVADA
-    #      nodePort: 30000 # 30000-32XXX
+          nodePort: 30000 # 30000-32XXX
           # Abre el puerto 30000 en las IPS publicas de los nodos del cluster y 
           # las peticiones que lleguen ahi, se redirigen al balanceador (IP privada)
     selector:
-        app: logstash
+        app: apache
 ---
 # Servicio Logstash: PRIVADO
 apiVersion: v1
@@ -96,6 +126,8 @@ apiVersion: v1
 kind: Pod
 metadata: # Atributos, etiquetas relacionadas con el objeto que defino
     name: pod_apache
+    labels: 
+        app: apache
 spec:
     containers: # Procesos aislados que arrancan y no paran
         - name: contenedor_apache
@@ -164,10 +196,21 @@ spec:
             - containerPort: 5044
           env:
             - name: MONITORING_ENABLED
-              value: 'false'
+              #value: 'false'
+              valueFrom:
+                configMapKeyRef:
+                    name: configuracion_logstash
+                    key: MONITORING_ENABLED
+            - name: contrasena_admin
+              valueFrom:
+                secretKeyRef:
+                    name: contrasena_administrador
+                    key: contrasena
           volumeMounts:
             - name: fichero_logstash
               mountPath: /usr/share/logstash/pipeline/logstash.conf
+            - name: configuracion_db
+              mountPath: /configuracion
     initContainers:
         - name: ClonadorConfigLogstash
           image: ubuntu
@@ -180,6 +223,10 @@ spec:
     volumes:
         - name: fichero_logstash
           emptyDir: {}
+        - name: configuracion_db
+          #configMap:
+          secret:
+            name: fichero_configuracion_db
 ---
 
 # cli              servicio de docker
@@ -196,3 +243,40 @@ spec:
 #                (1 por maquina)                     (1 por maquina)              (1 por maquina)            (1 por contenedor)        
 # kubectl apply -f NOMBRE_FICHERO
 # docker-compose -f NOMBRE_FICHERO up
+
+
+
+#Kubernetes
+#    PostgresDB
+#        Name: midb
+#        Usuario: ivan
+#        Contraseña: password
+#    Weblogic:
+#        Administrador Weblogic: RecursoDB
+#            Name: midb_recurso
+#                NameDB: midb
+#                Usuario: ivan
+#                Contraseña: password
+#        App1: midb_recurso
+        
+#Fuera: Directamente BD:
+#        Name: midb
+#        Usuario: ivan
+#        Contraseña: password
+
+#Usuario final --(comunicación cifrada-ataques de suplantación de identidad)-- App1
+#https://miapp1
+#Kubernetes:
+#    Secret<- certificado
+#    Secret<- clave privada
+#    JBoss:
+#        ->Certificado(Clave publica-firma ca)
+#        ->Clave privada
+#        Configuraría App1-https (cert, clave privada)
+#        App1
+#    Balanceador 
+#        -> Certificado
+#        -> clave privada
+
+# Volumes Kubernetes
+# Afinidades Pods

@@ -1,0 +1,55 @@
+Servicios: Ayudan a exponer y rescubrir los puertos accesibles (publicos y privados) en un cluster
+Kubernetes: DNS para los "servicios" <- Descubrimiento de servicios
+En todos los contenedores:
+    - 1º Atacar a un servicio por su nombre (DNS)
+    - 2º Como variables de entorno (ENV) en cada contenedor se incluye:
+        - Una variable con el nombre del servicio: cuyo valor es la IP
+        - Una variable con el nombre del servicio, acabado en _PORT: cuyo valor es el puerto
+
+
+imagen contenedor preconfigurada: Toolbox->Busybox
+Kubernetes
+    Ingress(Enrutar paths URL: http): NGINX
+        http://IP_INGRESS/webserver     -> apache:82
+        http://IP_INGRESS/webservice1   -> weblogic:82
+    Servicio: Apache <- PUBLICO
+        Balanceador de carga (cola)
+        Conectar por detras con C1 y con C1', a sus puertos 80
+        Puerto en que se expone: 82
+        Necesito que esté disponible en la red: 192.X.X.X
+        Tipo: NodePort:
+            192.X.X.1 (IP Nodo1): Redirección de puertos: 30000-327XX -> apache:82
+            192.X.X.2 (IP Nodo2): Redirección de puertos: 30000-32XXX -> apache:82
+        Tipo: LoadBalancer: Ofrencen los Proveedores de Cloud
+            FloatingIP:    192.X.X.17 -> 192.X.X.1 o 192.X.X.2 
+            Balanceador:   192.X.X.17 -> 192.X.X.1 o 192.X.X.2 
+            Yo puedo montarlo: Complementos dentro de nuestro Kubernetes
+    Servicio: MariaDB IP--- 172.X.X.8 - DNS: mariadb
+        Balanceador de carga (cola)
+        Conectar por detras con C4, a sus puertos 3306
+        Puerto en que se expone: 3308
+        Servicio privado: Tipo: ClusterIP
+    Nodo1  - IP--- 172.X.X.4.  - IP RED ---- 192.X.X.1
+        Pod1 - IP--- 172.X.X.1
+            C1 (Apache)
+                Port: 80
+                NO ----Conectar con MariaDB: Pod2 172.X.X.2:3306---- 
+                Conectar con MariaDB: Servicio MariaDB : mariadb:$mariadb_port
+            C2 (Filebeat)
+        Pod2 - IP--- 172.X.X.2
+            C3 (Logstash)
+                Port: 5044 <- Privado en el cluster
+            C4 (mariadb)
+                Port 3306  <- Privado 
+    Nodo2 - IP--- 172.X.X.5.   - IP RED ---- 192.X.X.2
+        Pod1' - IP--- 172.X.X.3
+            C1' (Apache)
+                Port: 80
+            C2' (Filebeat)
+            
+
+ElasticSearch: Cluster (7-8 nodos)
+    Nodo1 - 'Roles' Maestro (nodo2, nodo3, nodo4)
+    Nodo2 - 'Ingesta'       (nodo1, nodo3, nodo4)
+    Nodo3 - 'Data'          (nodo1, nodo2, nodo4)
+    Nodo4 - 'Consulta'
