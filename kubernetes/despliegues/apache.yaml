@@ -114,7 +114,7 @@ metadata:
         app: logstash
 spec:
     containers:
-        - name: contenedor_logstash
+        - name: contenedorlogstash
           image: docker.elastic.co/logstash/logstash:7.8.0
           ports:
             - containerPort: 5044
@@ -131,7 +131,20 @@ spec:
     volumes:
         - name: volconfiglogstash
           configMap:
-            name: configlogstash
+            name: configuracionlogstash
             items:
                 - key: logstash.conf
                   path: logstash.conf          
+---
+apiVersion: v1
+kind: Service
+metadata: 
+    name: serviciologstash
+spec:
+    ports:
+        - targetPort: 5044
+          port: 5044
+    selector:
+        app: logstash
+    type: ClusterIP
+---
