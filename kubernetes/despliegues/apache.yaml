@@ -37,7 +37,8 @@ spec:
             - name: logs
               mountPath: /logs
             - name: volconfigfilebeat
-              mountPath: /usr/share/filebeat/filebeat2.yml
+              mountPath: /usr/share/filebeat/filebeat.yml
+              subPath: filebeat.yml
     initContainers: 
         - name: clonadorconfigapache
           image: ubuntu
@@ -53,7 +54,10 @@ spec:
           emptyDir: {}
         - name: volconfigfilebeat
           configMap:
-            name: configfilebeat         
+            name: configfilebeat
+            items:
+                - key: filebeat.yml
+                  path: filebeat.yml
 ---
 apiVersion: v1
 kind: Service
@@ -67,3 +71,67 @@ spec:
         app: apache
     type: ClusterIP
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: configuracionlogstash
+data:
+    MONITORING_ENABLED: 'false'
+    logstash.conf: |
+        input {
+            beats {
+                port => "5044"
+            }
+        }
+        filter {
+            mutate {
+                remove_field => [ "@timestamp","agent" ]
+            }
+            grok {
+                match => { "message" => "%{COMBINEDAPACHELOG}"}
+            }
+            mutate {
+                convert => [ "bytes","integer" ]
+                convert => [ "response","integer" ]
+            }
+            geoip{
+                 source => "clientip"
+                 target => "geoip"
+            }
+            date{
+                 match => [ "timestamp", "dd/MMM/yy:HH:mm:ss Z"]
+            }
+        }
+        output {
+            stdout { codec => rubydebug }
+        }
+---
+apiVersion: v1
+kind: Pod
+metadata: 
+    name: podlogstash
+    labels:
+        app: logstash
+spec:
+    containers:
+        - name: contenedor_logstash
+          image: docker.elastic.co/logstash/logstash:7.8.0
+          ports:
+            - containerPort: 5044
+          env:
+            - name: MONITORING_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                    name: configuracionlogstash
+                    key: MONITORING_ENABLED
+          volumeMounts:
+            - name: volconfiglogstash
+              mountPath: /usr/share/logstash/pipeline/logstash.conf
+              subPath: logstash.conf
+    volumes:
+        - name: volconfiglogstash
+          configMap:
+            name: configlogstash
+            items:
+                - key: logstash.conf
+                  path: logstash.conf          
