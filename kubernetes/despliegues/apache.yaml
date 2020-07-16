@@ -12,52 +12,62 @@ data:
         output.logstash:
           hosts: ["serviciologstash:5044"]
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+#kind: Pod
+kind: Deployment
 metadata:
-    name: podapache
-    labels: 
-        app: apache
+    name: depapache
 spec:
-    containers:
-        - name: contenedorapache
-          image: httpd
-          command: ["/bin/bash"]
-          args: ["-c", "cp /apache/httpd.conf /usr/local/apache2/conf && httpd-foreground"]
-          ports:
-            - containerPort: 80
-          volumeMounts:
-            - name: logs
-              mountPath: /logs
-            - name: configapache
-              mountPath: /apache
-        - name: contenedorfilebeat
-          image: docker.elastic.co/beats/filebeat:7.8.0
-          volumeMounts:
-            - name: logs
-              mountPath: /logs
-            - name: volconfigfilebeat
-              mountPath: /usr/share/filebeat/filebeat.yml
-              subPath: filebeat.yml
-    initContainers: 
-        - name: clonadorconfigapache
-          image: ubuntu
-          command: ['sh' , '-c' , 'apt update -y && apt install git -y && git clone https://github.com/IvanciniGT/dockerToKubernetes_ApacheConfig /apache']
-          volumeMounts:
-            - name: configapache
-              mountPath: /apache    
-    volumes:
-        - name: logs
-          emptyDir: 
-            medium: Memory         
-        - name: configapache
-          emptyDir: {}
-        - name: volconfigfilebeat
-          configMap:
-            name: configfilebeat
-            items:
-                - key: filebeat.yml
-                  path: filebeat.yml
+    replicas: 2
+    selector:
+        matchLabels:
+            app: apache
+    template:
+        # POD
+        metadata:
+            name: podapache
+            labels: 
+                app: apache
+        spec:
+            containers:
+                - name: contenedorapache
+                  image: httpd
+                  command: ["/bin/bash"]
+                  args: ["-c", "cp /apache/httpd.conf /usr/local/apache2/conf && httpd-foreground"]
+                  ports:
+                    - containerPort: 80
+                  volumeMounts:
+                    - name: logs
+                      mountPath: /logs
+                    - name: configapache
+                      mountPath: /apache
+                - name: contenedorfilebeat
+                  image: docker.elastic.co/beats/filebeat:7.8.0
+                  volumeMounts:
+                    - name: logs
+                      mountPath: /logs
+                    - name: volconfigfilebeat
+                      mountPath: /usr/share/filebeat/filebeat.yml
+                      subPath: filebeat.yml
+            initContainers: 
+                - name: clonadorconfigapache
+                  image: ubuntu
+                  command: ['sh' , '-c' , 'apt update -y && apt install git -y && git clone https://github.com/IvanciniGT/dockerToKubernetes_ApacheConfig /apache']
+                  volumeMounts:
+                    - name: configapache
+                      mountPath: /apache    
+            volumes:
+                - name: logs
+                  emptyDir: 
+                    medium: Memory         
+                - name: configapache
+                  emptyDir: {}
+                - name: volconfigfilebeat
+                  configMap:
+                    name: configfilebeat
+                    items:
+                        - key: filebeat.yml
+                          path: filebeat.yml
 ---
 apiVersion: v1
 kind: Service
