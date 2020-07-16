@@ -1,5 +1,18 @@
 ---
 apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: configfilebeat
+data:
+    filebeat.yml: |
+        filebeat.inputs:
+        - type: log
+          paths:
+            - /logs/access_log 
+        output.logstash:
+          hosts: ["serviciologstash:5044"]
+---
+apiVersion: v1
 kind: Pod
 metadata:
     name: podapache
@@ -23,12 +36,12 @@ spec:
           volumeMounts:
             - name: logs
               mountPath: /logs
+            - name: volconfigfilebeat
+              mountPath: /usr/share/filebeat/filebeat2.yml
     initContainers: 
-        - name: ClonadorConfigApache
+        - name: clonadorconfigapache
           image: ubuntu
-          command: >
-            ['sh' , '-c' , 'apt update -y && apt install git -y && 
-            git clone https://github.com/IvanciniGT/dockerToKubernetes_ApacheConfig /apache']
+          command: ['sh' , '-c' , 'apt update -y && apt install git -y && git clone https://github.com/IvanciniGT/dockerToKubernetes_ApacheConfig /apache']
           volumeMounts:
             - name: configapache
               mountPath: /apache    
@@ -38,7 +51,10 @@ spec:
             medium: Memory         
         - name: configapache
           emptyDir: {}
----          
+        - name: volconfigfilebeat
+          configMap:
+            name: configfilebeat         
+---
 apiVersion: v1
 kind: Service
 metadata: 
